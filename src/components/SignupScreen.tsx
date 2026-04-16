@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Camera, User, Compass, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, User, Compass, Sparkles, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-state";
 
@@ -17,6 +17,73 @@ export function SignupScreen() {
   const [arrivalHabit, setArrivalHabit] = useState("");
   const [zodiac, setZodiac] = useState("");
   const [travelStyle, setTravelStyle] = useState("");
+
+  // Camera state
+  const [cameraActive, setCameraActive] = useState(false);
+  const [selfieData, setSelfieData] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraActive(true);
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setCameraError("Camera access denied. Please allow camera in your browser settings.");
+      } else if (err.name === "NotFoundError") {
+        setCameraError("No camera found on this device.");
+      } else {
+        setCameraError("Could not access camera. Try again.");
+      }
+    }
+  }, []);
+
+  const takeSelfie = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const size = Math.min(video.videoWidth, video.videoHeight);
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    // Center crop to square
+    const sx = (video.videoWidth - size) / 2;
+    const sy = (video.videoHeight - size) / 2;
+    ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    setSelfieData(dataUrl);
+    stopCamera();
+  }, [stopCamera]);
+
+  const retakeSelfie = useCallback(() => {
+    setSelfieData(null);
+    startCamera();
+  }, [startCamera]);
+
+  // Stop camera when leaving the selfie step
+  useEffect(() => {
+    if (step !== 3) {
+      stopCamera();
+    }
+  }, [step, stopCamera]);
 
   const steps = [
     {
@@ -92,12 +159,47 @@ export function SignupScreen() {
       subtitle: "No old photos allowed — show the real you",
       content: (
         <div className="flex flex-col items-center gap-6">
-          <div className="h-48 w-48 rounded-full bg-input border-2 border-dashed border-coral/40 flex items-center justify-center">
-            <Camera className="h-16 w-16 text-muted-foreground/40" />
-          </div>
-          <Button variant="coral" className="rounded-xl" onClick={() => setStep(step + 1)}>
-            Take Selfie
-          </Button>
+          <canvas ref={canvasRef} className="hidden" />
+
+          {selfieData ? (
+            <>
+              <img
+                src={selfieData}
+                alt="Your selfie"
+                className="h-48 w-48 rounded-full object-cover border-2 border-coral"
+              />
+              <Button variant="outline" className="rounded-xl gap-2" onClick={retakeSelfie}>
+                <RotateCcw className="h-4 w-4" /> Retake
+              </Button>
+            </>
+          ) : cameraActive ? (
+            <>
+              <div className="h-48 w-48 rounded-full overflow-hidden border-2 border-coral">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="h-full w-full object-cover scale-x-[-1]"
+                />
+              </div>
+              <Button variant="coral" className="rounded-xl gap-2" onClick={takeSelfie}>
+                <Camera className="h-4 w-4" /> Capture
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="h-48 w-48 rounded-full bg-input border-2 border-dashed border-coral/40 flex items-center justify-center">
+                <Camera className="h-16 w-16 text-muted-foreground/40" />
+              </div>
+              <Button variant="coral" className="rounded-xl gap-2" onClick={startCamera}>
+                <Camera className="h-4 w-4" /> Open Camera
+              </Button>
+              {cameraError && (
+                <p className="text-xs text-destructive text-center max-w-[250px]">{cameraError}</p>
+              )}
+            </>
+          )}
           <p className="text-xs text-muted-foreground/60">Camera opens for a fresh photo each session</p>
         </div>
       ),
