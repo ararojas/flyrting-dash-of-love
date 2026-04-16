@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AppContext, type AppScreen } from "@/lib/app-state";
+import { AppContext, type AppScreen, type UserPreferences, defaultPreferences } from "@/lib/app-state";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { SignupScreen } from "@/components/SignupScreen";
 import { BoardingPassScreen } from "@/components/BoardingPassScreen";
@@ -25,9 +25,10 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [screen, setScreen] = useState<AppScreen>("welcome");
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
 
   return (
-    <AppContext.Provider value={{ screen, setScreen, activeChatId, setActiveChatId }}>
+    <AppContext.Provider value={{ screen, setScreen, activeChatId, setActiveChatId, preferences, setPreferences }}>
       <div className="mx-auto max-w-md min-h-screen">
         {screen === "welcome" && <WelcomeScreen />}
         {screen === "signup" && <SignupScreen />}
