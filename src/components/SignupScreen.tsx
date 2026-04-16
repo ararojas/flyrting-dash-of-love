@@ -159,12 +159,47 @@ export function SignupScreen() {
       subtitle: "No old photos allowed — show the real you",
       content: (
         <div className="flex flex-col items-center gap-6">
-          <div className="h-48 w-48 rounded-full bg-input border-2 border-dashed border-coral/40 flex items-center justify-center">
-            <Camera className="h-16 w-16 text-muted-foreground/40" />
-          </div>
-          <Button variant="coral" className="rounded-xl" onClick={() => setStep(step + 1)}>
-            Take Selfie
-          </Button>
+          <canvas ref={canvasRef} className="hidden" />
+
+          {selfieData ? (
+            <>
+              <img
+                src={selfieData}
+                alt="Your selfie"
+                className="h-48 w-48 rounded-full object-cover border-2 border-coral"
+              />
+              <Button variant="outline" className="rounded-xl gap-2" onClick={retakeSelfie}>
+                <RotateCcw className="h-4 w-4" /> Retake
+              </Button>
+            </>
+          ) : cameraActive ? (
+            <>
+              <div className="h-48 w-48 rounded-full overflow-hidden border-2 border-coral">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="h-full w-full object-cover scale-x-[-1]"
+                />
+              </div>
+              <Button variant="coral" className="rounded-xl gap-2" onClick={takeSelfie}>
+                <Camera className="h-4 w-4" /> Capture
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="h-48 w-48 rounded-full bg-input border-2 border-dashed border-coral/40 flex items-center justify-center">
+                <Camera className="h-16 w-16 text-muted-foreground/40" />
+              </div>
+              <Button variant="coral" className="rounded-xl gap-2" onClick={startCamera}>
+                <Camera className="h-4 w-4" /> Open Camera
+              </Button>
+              {cameraError && (
+                <p className="text-xs text-destructive text-center max-w-[250px]">{cameraError}</p>
+              )}
+            </>
+          )}
           <p className="text-xs text-muted-foreground/60">Camera opens for a fresh photo each session</p>
         </div>
       ),
