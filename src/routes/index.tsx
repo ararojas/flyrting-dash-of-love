@@ -1,26 +1,43 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { AppContext, type AppScreen } from "@/lib/app-state";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { SignupScreen } from "@/components/SignupScreen";
+import { BoardingPassScreen } from "@/components/BoardingPassScreen";
+import { PreferencesScreen } from "@/components/PreferencesScreen";
+import { MatchesGrid } from "@/components/MatchesGrid";
+import { ChatScreen } from "@/components/ChatScreen";
+import { FlightExtensionScreen } from "@/components/FlightExtensionScreen";
+import { PostDateScreen } from "@/components/PostDateScreen";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "Flyrting — Love at First Flight" },
+      { name: "description", content: "Meet amazing people at your airport gate. Every connection has a countdown." },
+      { property: "og:title", content: "Flyrting — Love at First Flight" },
+      { property: "og:description", content: "The dating app that only works at airports." },
+    ],
+  }),
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
-
 function Index() {
-  return <PlaceholderIndex />;
+  const [screen, setScreen] = useState<AppScreen>("welcome");
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
+  return (
+    <AppContext.Provider value={{ screen, setScreen, activeChatId, setActiveChatId }}>
+      <div className="mx-auto max-w-md min-h-screen">
+        {screen === "welcome" && <WelcomeScreen />}
+        {screen === "signup" && <SignupScreen />}
+        {screen === "boarding-pass" && <BoardingPassScreen />}
+        {screen === "preferences" && <PreferencesScreen />}
+        {screen === "matches" && <MatchesGrid />}
+        {screen === "chat" && <ChatScreen />}
+        {screen === "extend-flight" && <FlightExtensionScreen />}
+        {screen === "post-date" && <PostDateScreen />}
+      </div>
+    </AppContext.Provider>
+  );
 }
