@@ -20,6 +20,7 @@ export function SignupScreen() {
 
   // Camera state
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const [selfieData, setSelfieData] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -31,25 +32,32 @@ export function SignupScreen() {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     setCameraActive(false);
+    setCameraReady(false);
   }, []);
 
   const startCamera = useCallback(async () => {
     setCameraError(null);
+    setCameraReady(false);
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
+        audio: false,
       });
+
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setCameraActive(true);
     } catch (err: any) {
       if (err.name === "NotAllowedError") {
         setCameraError("Camera access denied. Please allow camera in your browser settings.");
       } else if (err.name === "NotFoundError") {
         setCameraError("No camera found on this device.");
+      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+        setCameraError("Your camera is busy in another app or tab. Close it and try again.");
       } else {
         setCameraError("Could not access camera. Try again.");
       }
@@ -58,32 +66,83 @@ export function SignupScreen() {
 
   const takeSelfie = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const size = Math.min(video.videoWidth, video.videoHeight);
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+
+    if (!width || !height) {
+      setCameraError("Camera is still loading. Wait a second and try capture again.");
+      return;
+    }
+
+    const size = Math.min(width, height);
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
-    // Center crop to square
-    const sx = (video.videoWidth - size) / 2;
-    const sy = (video.videoHeight - size) / 2;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      setCameraError("Could not capture photo. Try again.");
+      return;
+    }
+
+    const sx = (width - size) / 2;
+    const sy = (height - size) / 2;
     ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    if (dataUrl === "data:,") {
+      setCameraError("Photo capture failed. Please try again.");
+      return;
+    }
+
     setSelfieData(dataUrl);
+    setCameraError(null);
     stopCamera();
   }, [stopCamera]);
 
   const retakeSelfie = useCallback(() => {
     setSelfieData(null);
+    setCameraError(null);
     startCamera();
   }, [startCamera]);
 
-  // Stop camera when leaving the selfie step
   useEffect(() => {
     if (step !== 3) {
       stopCamera();
     }
   }, [step, stopCamera]);
+
+  useEffect(() => {
+    if (!cameraActive || !streamRef.current || !videoRef.current) return;
+
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+
+    const markReady = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        setCameraReady(true);
+        setCameraError(null);
+      }
+    };
+
+    video.onloadedmetadata = () => {
+      video.play().then(markReady).catch(() => {
+        setCameraError("Camera preview could not start. Try again.");
+      });
+    };
+
+    if (video.readyState >= 1) {
+      video.play().then(markReady).catch(() => {
+        setCameraError("Camera preview could not start. Try again.");
+      });
+    }
+
+    return () => {
+      video.onloadedmetadata = null;
+    };
+  }, [cameraActive]);
 
   const steps = [
     {
@@ -183,8 +242,11 @@ export function SignupScreen() {
                   className="h-full w-full object-cover scale-x-[-1]"
                 />
               </div>
-              <Button variant="coral" className="rounded-xl gap-2" onClick={takeSelfie}>
-                <Camera className="h-4 w-4" /> Capture
+              {cameraError && (
+                <p className="text-xs text-destructive text-center max-w-[250px]">{cameraError}</p>
+              )}
+              <Button variant="coral" className="rounded-xl gap-2" onClick={takeSelfie} disabled={!cameraReady}>
+                <Camera className="h-4 w-4" /> {cameraReady ? "Capture" : "Starting camera…"}
               </Button>
             </>
           ) : (
@@ -209,7 +271,7 @@ export function SignupScreen() {
   const canProceed = step === 0 ? name && age && gender && interests
     : step === 1 ? arrivalHabit && travelStyle
     : step === 2 ? zodiac
-    : true;
+    : !!selfieData;
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-midnight px-6 py-8">
