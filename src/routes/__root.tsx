@@ -29,14 +29,12 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Flyrting — Love at First Flight" },
+      { name: "description", content: "The dating app that only works at airports. Meet people at your gate." },
+      { name: "author", content: "Flyrting" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "theme-color", content: "#1a1632" },
     ],
     links: [
       {
