@@ -18,6 +18,73 @@ export function SignupScreen() {
   const [zodiac, setZodiac] = useState("");
   const [travelStyle, setTravelStyle] = useState("");
 
+  // Camera state
+  const [cameraActive, setCameraActive] = useState(false);
+  const [selfieData, setSelfieData] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraActive(true);
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setCameraError("Camera access denied. Please allow camera in your browser settings.");
+      } else if (err.name === "NotFoundError") {
+        setCameraError("No camera found on this device.");
+      } else {
+        setCameraError("Could not access camera. Try again.");
+      }
+    }
+  }, []);
+
+  const takeSelfie = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const size = Math.min(video.videoWidth, video.videoHeight);
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    // Center crop to square
+    const sx = (video.videoWidth - size) / 2;
+    const sy = (video.videoHeight - size) / 2;
+    ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    setSelfieData(dataUrl);
+    stopCamera();
+  }, [stopCamera]);
+
+  const retakeSelfie = useCallback(() => {
+    setSelfieData(null);
+    startCamera();
+  }, [startCamera]);
+
+  // Stop camera when leaving the selfie step
+  useEffect(() => {
+    if (step !== 3) {
+      stopCamera();
+    }
+  }, [step, stopCamera]);
+
   const steps = [
     {
       icon: <User className="h-8 w-8" />,
