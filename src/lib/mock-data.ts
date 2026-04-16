@@ -1,14 +1,22 @@
+import selfieSofia from "@/assets/selfie-sofia.jpg";
+import selfieKai from "@/assets/selfie-kai.jpg";
+import selfieAmara from "@/assets/selfie-amara.jpg";
+import selfieLucas from "@/assets/selfie-lucas.jpg";
+import selfieElise from "@/assets/selfie-elise.jpg";
+import selfieMarco from "@/assets/selfie-marco.jpg";
+
 export interface MatchProfile {
   id: string;
   name: string;
   age: number;
+  gender: "woman" | "man";
   nationality: string;
   nationalityFlag: string;
   photo: string;
   boardingTime: Date;
   destination: string;
   gate: string;
-  starRating: number;
+  compatibility: number; // 0-100 percentage
   coincidences: number;
   travelStyle: string;
   arrivalHabit: string;
@@ -24,13 +32,14 @@ export const mockMatches: MatchProfile[] = [
     id: "1",
     name: "Sofia",
     age: 27,
+    gender: "woman",
     nationality: "Italian",
     nationalityFlag: "🇮🇹",
-    photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face",
+    photo: selfieSofia,
     boardingTime: addMinutes(95),
     destination: "Barcelona",
     gate: "B14",
-    starRating: 4.8,
+    compatibility: 96,
     coincidences: 3,
     travelStyle: "Spontaneous explorer",
     arrivalHabit: "Fashionably late",
@@ -41,13 +50,14 @@ export const mockMatches: MatchProfile[] = [
     id: "2",
     name: "Kai",
     age: 31,
+    gender: "man",
     nationality: "Japanese",
     nationalityFlag: "🇯🇵",
-    photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop&crop=face",
+    photo: selfieKai,
     boardingTime: addMinutes(45),
     destination: "London",
     gate: "C7",
-    starRating: 4.2,
+    compatibility: 84,
     coincidences: 0,
     travelStyle: "Cultural deep-diver",
     arrivalHabit: "3 hours early",
@@ -58,13 +68,14 @@ export const mockMatches: MatchProfile[] = [
     id: "3",
     name: "Amara",
     age: 25,
+    gender: "woman",
     nationality: "Nigerian",
     nationalityFlag: "🇳🇬",
-    photo: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=400&fit=crop&crop=face",
+    photo: selfieAmara,
     boardingTime: addMinutes(120),
     destination: "Paris",
     gate: "A22",
-    starRating: 4.5,
+    compatibility: 91,
     coincidences: 1,
     travelStyle: "Foodie adventurer",
     arrivalHabit: "Right on time",
@@ -75,13 +86,14 @@ export const mockMatches: MatchProfile[] = [
     id: "4",
     name: "Lucas",
     age: 29,
+    gender: "man",
     nationality: "Brazilian",
     nationalityFlag: "🇧🇷",
-    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
+    photo: selfieLucas,
     boardingTime: addMinutes(70),
     destination: "Barcelona",
     gate: "B14",
-    starRating: 3.9,
+    compatibility: 78,
     coincidences: 2,
     travelStyle: "Beach hopper",
     arrivalHabit: "Cutting it close",
@@ -92,13 +104,14 @@ export const mockMatches: MatchProfile[] = [
     id: "5",
     name: "Elise",
     age: 26,
+    gender: "woman",
     nationality: "French",
     nationalityFlag: "🇫🇷",
-    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
+    photo: selfieElise,
     boardingTime: addMinutes(55),
     destination: "Tokyo",
     gate: "D3",
-    starRating: 4.7,
+    compatibility: 94,
     coincidences: 0,
     travelStyle: "Minimalist nomad",
     arrivalHabit: "Early bird",
@@ -109,13 +122,14 @@ export const mockMatches: MatchProfile[] = [
     id: "6",
     name: "Marco",
     age: 33,
+    gender: "man",
     nationality: "Spanish",
     nationalityFlag: "🇪🇸",
-    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face",
+    photo: selfieMarco,
     boardingTime: addMinutes(150),
     destination: "New York",
     gate: "E11",
-    starRating: 4.1,
+    compatibility: 82,
     coincidences: 0,
     travelStyle: "Business + pleasure",
     arrivalHabit: "Lounge regular",

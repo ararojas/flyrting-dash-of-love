@@ -10,18 +10,36 @@ export type AppScreen =
   | "extend-flight"
   | "post-date";
 
+export interface UserPreferences {
+  nationality: string;
+  destination: string;
+  ageRange: string;
+  genderPref: string;
+}
+
 export interface AppState {
   screen: AppScreen;
   setScreen: (screen: AppScreen) => void;
   activeChatId: string | null;
   setActiveChatId: (id: string | null) => void;
+  preferences: UserPreferences;
+  setPreferences: (prefs: UserPreferences) => void;
 }
+
+export const defaultPreferences: UserPreferences = {
+  nationality: "any",
+  destination: "any",
+  ageRange: "any",
+  genderPref: "everyone",
+};
 
 export const AppContext = createContext<AppState>({
   screen: "welcome",
   setScreen: () => {},
   activeChatId: null,
   setActiveChatId: () => {},
+  preferences: defaultPreferences,
+  setPreferences: () => {},
 });
 
 export const useApp = () => useContext(AppContext);
