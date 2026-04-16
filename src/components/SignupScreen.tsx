@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Camera, User, Compass, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, User, Compass, Sparkles, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-state";
 
