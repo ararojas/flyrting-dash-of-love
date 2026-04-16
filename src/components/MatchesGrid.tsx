@@ -2,16 +2,22 @@ import { motion } from "framer-motion";
 import { MapPin, Sparkles, SlidersHorizontal, Plane } from "lucide-react";
 import { mockMatches } from "@/lib/mock-data";
 import { CountdownTimer } from "@/components/CountdownTimer";
-import { StarRating } from "@/components/StarRating";
+import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { useApp } from "@/lib/app-state";
 
 export function MatchesGrid() {
-  const { setScreen, setActiveChatId } = useApp();
+  const { setScreen, setActiveChatId, preferences } = useApp();
 
   const handleMatch = (id: string) => {
     setActiveChatId(id);
     setScreen("chat");
   };
+
+  const filteredMatches = mockMatches.filter((match) => {
+    if (preferences.genderPref === "women" && match.gender !== "woman") return false;
+    if (preferences.genderPref === "men" && match.gender !== "man") return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-midnight px-4 pb-8">
@@ -39,7 +45,7 @@ export function MatchesGrid() {
 
       {/* Grid */}
       <div className="grid grid-cols-2 gap-3 mt-2">
-        {mockMatches.map((match, i) => (
+        {filteredMatches.map((match, i) => (
           <motion.button
             key={match.id}
             initial={{ opacity: 0, y: 20 }}
@@ -82,7 +88,7 @@ export function MatchesGrid() {
                   <span>{match.destination}</span>
                   <span>• {match.gate}</span>
                 </div>
-                <StarRating rating={match.starRating} className="mt-1.5" />
+                <CompatibilityBadge percentage={match.compatibility} className="mt-1.5" />
                 <div className="mt-1.5 flex items-center gap-1.5">
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Boards in</span>
                   <CountdownTimer targetTime={match.boardingTime} className="text-xs" />

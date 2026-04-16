@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-state";
 
 export function PreferencesScreen() {
-  const { setScreen } = useApp();
-  const [nationality, setNationality] = useState("any");
-  const [destination, setDestination] = useState("any");
-  const [ageRange, setAgeRange] = useState("any");
-  const [genderPref, setGenderPref] = useState("everyone");
+  const { setScreen, preferences, setPreferences } = useApp();
+  const [nationality, setNationality] = useState(preferences.nationality);
+  const [destination, setDestination] = useState(preferences.destination);
+  const [ageRange, setAgeRange] = useState(preferences.ageRange);
+  const [genderPref, setGenderPref] = useState(preferences.genderPref);
+
+  const handleSubmit = () => {
+    setPreferences({ nationality, destination, ageRange, genderPref });
+    setScreen("matches");
+  };
 
   const Option = ({ label, value, selected, onSelect }: { label: string; value: string; selected: string; onSelect: (v: string) => void }) => (
     <button
@@ -72,7 +77,7 @@ export function PreferencesScreen() {
       </motion.div>
 
       <div className="mt-auto pt-8">
-        <Button variant="coral" size="lg" className="w-full rounded-xl py-6" onClick={() => setScreen("matches")}>
+        <Button variant="coral" size="lg" className="w-full rounded-xl py-6" onClick={handleSubmit}>
           See Matches <ArrowRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
