@@ -35,7 +35,7 @@ function Index() {
   const [profileChecked, setProfileChecked] = useState(false);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null);
 
-  // Check profile completion whenever the user changes
+  // Check profile completion whenever the user changes OR returns from the profile screen
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -43,7 +43,7 @@ function Index() {
       setProfileCompleted(null);
       return;
     }
-    setProfileChecked(false);
+    if (profileCompleted === null) setProfileChecked(false);
     (async () => {
       const { data } = await supabase
         .from("profiles")
@@ -53,7 +53,8 @@ function Index() {
       setProfileCompleted(!!data?.profile_completed);
       setProfileChecked(true);
     })();
-  }, [user, loading]);
+    // Re-check when user navigates away from the profile screen
+  }, [user, loading, screen === "profile" ? "on-profile" : "off-profile"]);
 
   // Route based on auth + profile state
   useEffect(() => {
