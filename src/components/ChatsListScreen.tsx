@@ -1,19 +1,14 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, MessageCircle, Plane } from "lucide-react";
+import { ArrowLeft, MessageCircle, Plane, Heart } from "lucide-react";
 import { mockMatches } from "@/lib/mock-data";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useApp } from "@/lib/app-state";
 
 export function ChatsListScreen() {
-  const { setScreen, setActiveChatId } = useApp();
+  const { setScreen, openChat, openedChats } = useApp();
 
-  // For demo, treat all matches as having an active chat.
-  const conversations = mockMatches;
-
-  const openChat = (id: string) => {
-    setActiveChatId(id);
-    setScreen("chat");
-  };
+  // Only show matches the user has actually opened a chat with.
+  const conversations = mockMatches.filter((m) => openedChats.includes(m.id));
 
   return (
     <div className="min-h-screen bg-gradient-midnight px-4 pb-8">
@@ -29,9 +24,21 @@ export function ChatsListScreen() {
 
       <div className="mt-2 space-y-2">
         {conversations.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center mt-12">
-            No conversations yet. Tap a match to start one!
-          </p>
+          <div className="flex flex-col items-center text-center mt-16 px-6">
+            <div className="h-16 w-16 rounded-full bg-card border border-border flex items-center justify-center mb-4">
+              <Heart className="h-7 w-7 text-coral/60" />
+            </div>
+            <p className="text-sm font-medium text-foreground">No chats yet</p>
+            <p className="text-xs text-muted-foreground mt-1.5 max-w-[260px]">
+              Open Flyrting and tap on someone you like — your conversations will land here.
+            </p>
+            <button
+              onClick={() => setScreen("matches")}
+              className="mt-5 rounded-xl bg-coral text-coral-foreground px-4 py-2 text-sm font-semibold glow-coral"
+            >
+              Browse Flyrting
+            </button>
+          </div>
         )}
         {conversations.map((m, i) => (
           <motion.button

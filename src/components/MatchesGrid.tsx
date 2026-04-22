@@ -11,7 +11,7 @@ import { signOut, useAuth } from "@/lib/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export function MatchesGrid() {
-  const { setScreen, setActiveChatId, preferences } = useApp();
+  const { setScreen, openChat, preferences } = useApp();
   const { user } = useAuth();
   const [profile, setProfile] = useState<{
     age: number | null;
@@ -37,8 +37,7 @@ export function MatchesGrid() {
   }, [user]);
 
   const handleMatch = (id: string) => {
-    setActiveChatId(id);
-    setScreen("chat");
+    openChat(id);
   };
 
   // Apply preferences AND profile-based filtering (mutual interest, age range, etc.)
@@ -231,6 +230,30 @@ export function MatchesGrid() {
                 {/* Flag */}
                 <div className="absolute top-2 left-2 text-lg">
                   {match.nationalityFlag}
+                </div>
+
+                {/* Hover description overlay — shows full bio + travel info on hover */}
+                <div className="absolute inset-0 bg-midnight/92 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col p-3 pointer-events-none">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-display text-base font-bold text-white">{match.name}</span>
+                    <span className="text-xs text-white/80">{match.age} • {match.nationality}</span>
+                  </div>
+                  <p className="text-[11px] text-white/90 mt-2 leading-snug line-clamp-4">
+                    {match.bio}
+                  </p>
+                  <div className="mt-auto space-y-1 text-[10px] text-white/80">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="h-2.5 w-2.5 text-coral shrink-0" />
+                      <span className="truncate">{match.travelStyle}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Plane className="h-2.5 w-2.5 text-coral shrink-0" />
+                      <span className="truncate">{match.zodiac} • {match.arrivalHabit}</span>
+                    </div>
+                    {aiReason && (
+                      <p className="text-coral italic line-clamp-2 pt-1">{aiReason}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bottom info overlay — high-contrast white text on dark gradient */}

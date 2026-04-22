@@ -26,6 +26,9 @@ export interface AppState {
   setActiveChatId: (id: string | null) => void;
   preferences: UserPreferences;
   setPreferences: (prefs: UserPreferences) => void;
+  /** IDs of matches the user has opened a chat with. */
+  openedChats: string[];
+  openChat: (id: string) => void;
 }
 
 export const defaultPreferences: UserPreferences = {
@@ -42,6 +45,8 @@ export const AppContext = createContext<AppState>({
   setActiveChatId: () => {},
   preferences: defaultPreferences,
   setPreferences: () => {},
+  openedChats: [],
+  openChat: () => {},
 });
 
 export const useApp = () => useContext(AppContext);

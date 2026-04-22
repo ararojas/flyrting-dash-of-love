@@ -31,6 +31,7 @@ function Index() {
   const [screen, setScreen] = useState<AppScreen>("welcome");
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
+  const [openedChats, setOpenedChats] = useState<string[]>([]);
   const { user, loading } = useAuth();
   const [profileChecked, setProfileChecked] = useState(false);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null);
@@ -84,8 +85,14 @@ function Index() {
     );
   }
 
+  const openChat = (id: string) => {
+    setActiveChatId(id);
+    setOpenedChats((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setScreen("chat");
+  };
+
   return (
-    <AppContext.Provider value={{ screen, setScreen, activeChatId, setActiveChatId, preferences, setPreferences }}>
+    <AppContext.Provider value={{ screen, setScreen, activeChatId, setActiveChatId, preferences, setPreferences, openedChats, openChat }}>
       <div className="mx-auto max-w-md min-h-screen">
         {screen === "welcome" && <WelcomeScreen />}
         {screen === "signup" && <SignupScreen />}
