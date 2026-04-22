@@ -19,11 +19,17 @@ export type Database = {
           age: number | null
           arrival_habit: string | null
           avatar_url: string | null
+          bio: string | null
           created_at: string
           display_name: string | null
+          favorite_destination: string | null
+          fun_answer: string | null
           gender: string | null
+          hobbies: string | null
           id: string
           interested_in: string | null
+          nationality: string | null
+          profile_completed: boolean
           selfie_data_url: string | null
           travel_style: string | null
           updated_at: string
@@ -33,11 +39,17 @@ export type Database = {
           age?: number | null
           arrival_habit?: string | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
+          favorite_destination?: string | null
+          fun_answer?: string | null
           gender?: string | null
+          hobbies?: string | null
           id: string
           interested_in?: string | null
+          nationality?: string | null
+          profile_completed?: boolean
           selfie_data_url?: string | null
           travel_style?: string | null
           updated_at?: string
@@ -47,11 +59,17 @@ export type Database = {
           age?: number | null
           arrival_habit?: string | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
+          favorite_destination?: string | null
+          fun_answer?: string | null
           gender?: string | null
+          hobbies?: string | null
           id?: string
           interested_in?: string | null
+          nationality?: string | null
+          profile_completed?: boolean
           selfie_data_url?: string | null
           travel_style?: string | null
           updated_at?: string
