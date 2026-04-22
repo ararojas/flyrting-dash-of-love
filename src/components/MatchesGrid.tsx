@@ -11,7 +11,7 @@ import { signOut, useAuth } from "@/lib/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export function MatchesGrid() {
-  const { setScreen, setActiveChatId, preferences } = useApp();
+  const { setScreen, openChat, preferences } = useApp();
   const { user } = useAuth();
   const [profile, setProfile] = useState<{
     age: number | null;
@@ -37,8 +37,7 @@ export function MatchesGrid() {
   }, [user]);
 
   const handleMatch = (id: string) => {
-    setActiveChatId(id);
-    setScreen("chat");
+    openChat(id);
   };
 
   // Apply preferences AND profile-based filtering (mutual interest, age range, etc.)
