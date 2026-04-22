@@ -6,23 +6,27 @@ import { toast } from "sonner";
 import { useState } from "react";
 
 export function WelcomeScreen() {
-  const [signingIn, setSigningIn] = useState(false);
+  const [busy, setBusy] = useState<null | "signup" | "login">(null);
 
-  const handleGoogle = async () => {
-    setSigningIn(true);
+  const handleGoogle = async (intent: "signup" | "login") => {
+    setBusy(intent);
     try {
+      // Both Sign Up and Log In use Google OAuth. The app routes new users
+      // (no completed profile) to the Profile creation screen automatically;
+      // returning users go straight into the app.
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
+        extraParams: intent === "login" ? { prompt: "select_account" } : {},
       });
       if (result.error) {
         toast.error("Could not sign in with Google. Try again.");
-        setSigningIn(false);
+        setBusy(null);
         return;
       }
       // result.redirected → browser will redirect; otherwise auth listener takes over.
-    } catch (e) {
+    } catch {
       toast.error("Sign-in failed. Try again.");
-      setSigningIn(false);
+      setBusy(null);
     }
   };
 
@@ -68,12 +72,26 @@ export function WelcomeScreen() {
             variant="coral"
             size="lg"
             className="w-full text-base py-6 rounded-xl gap-3"
-            onClick={handleGoogle}
-            disabled={signingIn}
+            onClick={() => handleGoogle("signup")}
+            disabled={busy !== null}
           >
             <GoogleIcon />
-            {signingIn ? "Connecting…" : "Continue with Google"}
+            {busy === "signup" ? "Connecting…" : "Sign up with Google"}
           </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full text-base py-6 rounded-xl gap-3 bg-card/40 border-border hover:bg-card"
+            onClick={() => handleGoogle("login")}
+            disabled={busy !== null}
+          >
+            <GoogleIcon dark />
+            {busy === "login" ? "Connecting…" : "Log in with Google"}
+          </Button>
+          <p className="text-[11px] text-muted-foreground/70 mt-1">
+            New here? <span className="text-coral">Sign up</span> to create your profile.
+            Already have an account? <span className="text-foreground">Log in</span>.
+          </p>
         </div>
 
         <p className="mt-8 text-xs text-muted-foreground/60">
@@ -84,10 +102,10 @@ export function WelcomeScreen() {
   );
 }
 
-function GoogleIcon() {
+function GoogleIcon({ dark = false }: { dark?: boolean }) {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path fill="#FFFFFF" d="M21.35 11.1H12v3.2h5.35c-.23 1.5-1.7 4.4-5.35 4.4-3.22 0-5.85-2.66-5.85-5.95s2.63-5.95 5.85-5.95c1.83 0 3.06.78 3.76 1.45l2.56-2.47C16.7 4.43 14.55 3.5 12 3.5 6.98 3.5 2.9 7.58 2.9 12.6S6.98 21.7 12 21.7c6.92 0 9.5-4.85 9.5-7.34 0-.5-.05-.86-.15-1.26z"/>
+      <path fill={dark ? "currentColor" : "#FFFFFF"} d="M21.35 11.1H12v3.2h5.35c-.23 1.5-1.7 4.4-5.35 4.4-3.22 0-5.85-2.66-5.85-5.95s2.63-5.95 5.85-5.95c1.83 0 3.06.78 3.76 1.45l2.56-2.47C16.7 4.43 14.55 3.5 12 3.5 6.98 3.5 2.9 7.58 2.9 12.6S6.98 21.7 12 21.7c6.92 0 9.5-4.85 9.5-7.34 0-.5-.05-.86-.15-1.26z"/>
     </svg>
   );
 }
