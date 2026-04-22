@@ -34,6 +34,7 @@ function Index() {
   const { user, loading } = useAuth();
   const [profileChecked, setProfileChecked] = useState(false);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null);
+  const onProfileScreen = screen === "profile";
 
   // Check profile completion whenever the user changes OR returns from the profile screen
   useEffect(() => {
@@ -54,7 +55,8 @@ function Index() {
       setProfileChecked(true);
     })();
     // Re-check when user navigates away from the profile screen
-  }, [user, loading, screen === "profile" ? "on-profile" : "off-profile"]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, onProfileScreen]);
 
   // Route based on auth + profile state
   useEffect(() => {
