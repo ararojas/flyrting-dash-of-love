@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Sparkles, SlidersHorizontal, Plane, Loader2 } from "lucide-react";
+import { MapPin, Sparkles, SlidersHorizontal, Plane, Loader2, LogOut } from "lucide-react";
 import { mockMatches } from "@/lib/mock-data";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { useApp } from "@/lib/app-state";
 import { getAICompatibility } from "@/lib/matching.functions";
 import { toast } from "sonner";
+import { signOut } from "@/lib/use-auth";
 
 export function MatchesGrid() {
   const { setScreen, setActiveChatId, preferences } = useApp();
@@ -108,6 +109,13 @@ export function MatchesGrid() {
               className="h-10 w-10 rounded-xl bg-card flex items-center justify-center border border-border hover:bg-accent transition-colors"
             >
               <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => signOut()}
+              title="Sign out"
+              className="h-10 w-10 rounded-xl bg-card flex items-center justify-center border border-border hover:bg-accent transition-colors"
+            >
+              <LogOut className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
         </div>
