@@ -171,9 +171,11 @@ export function MatchesGrid() {
                   {aiReason && (
                     <p className="text-[9px] text-muted-foreground/70 mt-0.5 line-clamp-2 italic">{aiReason}</p>
                   )}
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Boards in</span>
-                    <CountdownTimer targetTime={match.boardingTime} className="text-xs" />
+                  <div className="mt-2 flex items-center gap-2">
+                    <CountdownTimer targetTime={match.boardingTime} variant="clock" size="sm" />
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">
+                      Boards<br />in
+                    </span>
                   </div>
                 </div>
               </div>
