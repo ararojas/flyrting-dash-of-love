@@ -35,6 +35,12 @@ export const Route = createRootRoute({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "theme-color", content: "#1a1632" },
+      { property: "og:title", content: "Flyrting — Love at First Flight" },
+      { name: "twitter:title", content: "Flyrting — Love at First Flight" },
+      { property: "og:description", content: "The dating app that only works at airports. Meet people at your gate." },
+      { name: "twitter:description", content: "The dating app that only works at airports. Meet people at your gate." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e0b90ecf-3f07-45f7-89c8-bc4dcc7f3b7e/id-preview-3b84d4da--9c26788f-6dc2-43c9-b81a-e7503a38f74b.lovable.app-1776849746680.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e0b90ecf-3f07-45f7-89c8-bc4dcc7f3b7e/id-preview-3b84d4da--9c26788f-6dc2-43c9-b81a-e7503a38f74b.lovable.app-1776849746680.png" },
     ],
     links: [
       {
