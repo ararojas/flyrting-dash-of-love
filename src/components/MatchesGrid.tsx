@@ -217,8 +217,8 @@ export function MatchesGrid() {
                   alt={match.name}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
+                {/* Stronger gradient overlay for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/10" />
 
                 {/* Coincidence badge */}
                 {match.coincidences > 0 && (
@@ -233,26 +233,31 @@ export function MatchesGrid() {
                   {match.nationalityFlag}
                 </div>
 
-                {/* Bottom info overlay */}
+                {/* Bottom info overlay — high-contrast white text on dark gradient */}
                 <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-display text-lg font-bold text-foreground">{match.name}</span>
-                    <span className="text-sm text-muted-foreground">{match.age}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
-                    <Plane className="h-3 w-3" />
-                    <span>{match.destination}</span>
-                    <span>• {match.gate}</span>
-                  </div>
-                  <CompatibilityBadge percentage={compat} className="mt-1.5" />
-                  {aiReason && (
-                    <p className="text-[9px] text-muted-foreground/70 mt-0.5 line-clamp-2 italic">{aiReason}</p>
-                  )}
-                  <div className="mt-2 flex items-center gap-2">
-                    <CountdownTimer targetTime={match.boardingTime} variant="clock" size="sm" />
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">
-                      Boards<br />in
-                    </span>
+                  <div className="flex items-end justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="font-display text-lg font-bold text-white drop-shadow">{match.name}</span>
+                        <span className="text-sm text-white/85">{match.age}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5 text-xs text-white/85">
+                        <Plane className="h-3 w-3" />
+                        <span className="truncate">{match.destination}</span>
+                        <span>• {match.gate}</span>
+                      </div>
+                      <CompatibilityBadge percentage={compat} className="mt-1.5" />
+                      {aiReason && (
+                        <p className="text-[10px] text-white/75 mt-1 line-clamp-2 italic leading-snug">{aiReason}</p>
+                      )}
+                    </div>
+                    {/* Clock with label ON TOP */}
+                    <div className="flex flex-col items-center gap-0.5 shrink-0">
+                      <span className="text-[9px] text-white/85 uppercase tracking-wider leading-tight text-center">
+                        Boards in
+                      </span>
+                      <CountdownTimer targetTime={match.boardingTime} variant="clock" size="sm" />
+                    </div>
                   </div>
                 </div>
               </div>
