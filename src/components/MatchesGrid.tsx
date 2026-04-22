@@ -232,6 +232,30 @@ export function MatchesGrid() {
                   {match.nationalityFlag}
                 </div>
 
+                {/* Hover description overlay — shows full bio + travel info on hover */}
+                <div className="absolute inset-0 bg-midnight/92 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col p-3 pointer-events-none">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-display text-base font-bold text-white">{match.name}</span>
+                    <span className="text-xs text-white/80">{match.age} • {match.nationality}</span>
+                  </div>
+                  <p className="text-[11px] text-white/90 mt-2 leading-snug line-clamp-4">
+                    {match.bio}
+                  </p>
+                  <div className="mt-auto space-y-1 text-[10px] text-white/80">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="h-2.5 w-2.5 text-coral shrink-0" />
+                      <span className="truncate">{match.travelStyle}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Plane className="h-2.5 w-2.5 text-coral shrink-0" />
+                      <span className="truncate">{match.zodiac} • {match.arrivalHabit}</span>
+                    </div>
+                    {aiReason && (
+                      <p className="text-coral italic line-clamp-2 pt-1">{aiReason}</p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Bottom info overlay — high-contrast white text on dark gradient */}
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <div className="flex items-end justify-between gap-2">
