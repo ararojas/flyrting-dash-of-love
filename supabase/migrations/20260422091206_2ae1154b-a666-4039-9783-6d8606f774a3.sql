@@ -1,0 +1,8 @@
+
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS nationality TEXT,
+  ADD COLUMN IF NOT EXISTS hobbies TEXT,
+  ADD COLUMN IF NOT EXISTS bio TEXT,
+  ADD COLUMN IF NOT EXISTS favorite_destination TEXT,
+  ADD COLUMN IF NOT EXISTS fun_answer TEXT,
+  ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN NOT NULL DEFAULT false;

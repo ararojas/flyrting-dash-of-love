@@ -8,7 +8,9 @@ export type AppScreen =
   | "matches"
   | "chat"
   | "extend-flight"
-  | "post-date";
+  | "post-date"
+  | "profile"
+  | "chats-list";
 
 export interface UserPreferences {
   nationality: string;

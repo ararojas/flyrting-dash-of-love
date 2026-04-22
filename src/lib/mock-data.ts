@@ -10,6 +10,7 @@ export interface MatchProfile {
   name: string;
   age: number;
   gender: "woman" | "man";
+  interestedIn: "women" | "men" | "everyone";
   nationality: string;
   nationalityFlag: string;
   photo: string;
@@ -35,6 +36,7 @@ export const mockMatches: MatchProfile[] = [
     gender: "woman",
     nationality: "Italian",
     nationalityFlag: "🇮🇹",
+    interestedIn: "everyone",
     photo: selfieSofia,
     boardingTime: addMinutes(95),
     destination: "Barcelona",
@@ -53,6 +55,7 @@ export const mockMatches: MatchProfile[] = [
     gender: "man",
     nationality: "Japanese",
     nationalityFlag: "🇯🇵",
+    interestedIn: "women",
     photo: selfieKai,
     boardingTime: addMinutes(45),
     destination: "London",
@@ -71,6 +74,7 @@ export const mockMatches: MatchProfile[] = [
     gender: "woman",
     nationality: "Nigerian",
     nationalityFlag: "🇳🇬",
+    interestedIn: "men",
     photo: selfieAmara,
     boardingTime: addMinutes(120),
     destination: "Paris",
@@ -89,6 +93,7 @@ export const mockMatches: MatchProfile[] = [
     gender: "man",
     nationality: "Brazilian",
     nationalityFlag: "🇧🇷",
+    interestedIn: "women",
     photo: selfieLucas,
     boardingTime: addMinutes(70),
     destination: "Barcelona",
@@ -107,6 +112,7 @@ export const mockMatches: MatchProfile[] = [
     gender: "woman",
     nationality: "French",
     nationalityFlag: "🇫🇷",
+    interestedIn: "everyone",
     photo: selfieElise,
     boardingTime: addMinutes(55),
     destination: "Tokyo",
@@ -125,6 +131,7 @@ export const mockMatches: MatchProfile[] = [
     gender: "man",
     nationality: "Spanish",
     nationalityFlag: "🇪🇸",
+    interestedIn: "women",
     photo: selfieMarco,
     boardingTime: addMinutes(150),
     destination: "New York",

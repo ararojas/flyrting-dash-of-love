@@ -9,7 +9,10 @@ import { MatchesGrid } from "@/components/MatchesGrid";
 import { ChatScreen } from "@/components/ChatScreen";
 import { FlightExtensionScreen } from "@/components/FlightExtensionScreen";
 import { PostDateScreen } from "@/components/PostDateScreen";
+import { ProfileScreen } from "@/components/ProfileScreen";
+import { ChatsListScreen } from "@/components/ChatsListScreen";
 import { useAuth } from "@/lib/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -29,18 +32,51 @@ function Index() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
   const { user, loading } = useAuth();
+  const [profileChecked, setProfileChecked] = useState(false);
+  const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null);
+  const onProfileScreen = screen === "profile";
 
-  // Route based on auth state
+  // Check profile completion whenever the user changes OR returns from the profile screen
   useEffect(() => {
     if (loading) return;
     if (!user) {
+      setProfileChecked(true);
+      setProfileCompleted(null);
+      return;
+    }
+    if (profileCompleted === null) setProfileChecked(false);
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("profile_completed")
+        .eq("id", user.id)
+        .maybeSingle();
+      setProfileCompleted(!!data?.profile_completed);
+      setProfileChecked(true);
+    })();
+    // Re-check when user navigates away from the profile screen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, onProfileScreen]);
+
+  // Route based on auth + profile state
+  useEffect(() => {
+    if (loading || !profileChecked) return;
+    if (!user) {
       setScreen("welcome");
-    } else if (screen === "welcome" || screen === "signup") {
+      return;
+    }
+    // First-time user → must create profile
+    if (profileCompleted === false && screen !== "profile") {
+      setScreen("profile");
+      return;
+    }
+    // Returning user landing on auth screens → forward into the app
+    if (profileCompleted && (screen === "welcome" || screen === "signup")) {
       setScreen("boarding-pass");
     }
-  }, [user, loading]);
+  }, [user, loading, profileChecked, profileCompleted, screen]);
 
-  if (loading) {
+  if (loading || (user && !profileChecked)) {
     return (
       <div className="mx-auto max-w-md min-h-screen flex items-center justify-center bg-gradient-midnight">
         <Loader2 className="h-8 w-8 text-coral animate-spin" />
@@ -59,6 +95,8 @@ function Index() {
         {screen === "chat" && <ChatScreen />}
         {screen === "extend-flight" && <FlightExtensionScreen />}
         {screen === "post-date" && <PostDateScreen />}
+        {screen === "profile" && <ProfileScreen isOnboarding={profileCompleted === false} />}
+        {screen === "chats-list" && <ChatsListScreen />}
       </div>
     </AppContext.Provider>
   );
