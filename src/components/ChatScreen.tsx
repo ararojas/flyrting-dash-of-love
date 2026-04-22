@@ -53,10 +53,7 @@ export function ChatScreen() {
               <Plane className="h-3 w-3" /> {match.destination} • {match.gate}
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Boards in</p>
-            <CountdownTimer targetTime={match.boardingTime} className="text-sm" />
-          </div>
+          <CountdownTimer targetTime={match.boardingTime} variant="clock" size="sm" />
         </div>
       </div>
 

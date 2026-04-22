@@ -153,19 +153,25 @@ export function SignupScreen() {
         <div className="flex flex-col gap-4">
           <input className="rounded-xl bg-input px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-coral" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
           <input className="rounded-xl bg-input px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-coral" placeholder="Age" type="number" value={age} onChange={e => setAge(e.target.value)} />
-          <div className="grid grid-cols-3 gap-2">
-            {["Woman", "Man", "Non-binary"].map(g => (
-              <button key={g} onClick={() => setGender(g)} className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${gender === g ? "bg-coral text-coral-foreground glow-coral" : "bg-input text-muted-foreground hover:bg-accent"}`}>
-                {g}
-              </button>
-            ))}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">What's your gender?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {["Woman", "Man", "Non-binary"].map(g => (
+                <button key={g} onClick={() => setGender(g)} className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${gender === g ? "bg-coral text-coral-foreground glow-coral" : "bg-input text-muted-foreground hover:bg-accent"}`}>
+                  {g}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {["Women", "Men", "Everyone"].map(i => (
-              <button key={i} onClick={() => setInterests(i)} className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${interests === i ? "bg-coral text-coral-foreground glow-coral" : "bg-input text-muted-foreground hover:bg-accent"}`}>
-                {i}
-              </button>
-            ))}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Who do you want to match with?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {["Women", "Men", "Everyone"].map(i => (
+                <button key={i} onClick={() => setInterests(i)} className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${interests === i ? "bg-coral text-coral-foreground glow-coral" : "bg-input text-muted-foreground hover:bg-accent"}`}>
+                  {i}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       ),
