@@ -51,7 +51,7 @@ export interface ConversationSummary {
   };
   lastMessage: string | null;
   lastMessageAt: string | null;
-  unread: boolean;
+  unreadCount: number;
 }
 
 export interface Message {
@@ -258,6 +258,24 @@ export const getConversations = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
 
+      // Compute unread count: messages from partner after my last_read_at
+      const { data: readRow } = await client
+        .from("conversation_reads")
+        .select("last_read_at")
+        .eq("user_id", user.id)
+        .eq("conversation_id", convo.id)
+        .maybeSingle();
+
+      const lastReadAt = (readRow as { last_read_at?: string } | null)?.last_read_at
+        ?? "1970-01-01T00:00:00Z";
+
+      const { count: unreadCount } = await client
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", convo.id)
+        .eq("sender_id", partnerId)
+        .gt("created_at", lastReadAt);
+
       result.push({
         conversationId: convo.id,
         partner: {
@@ -273,7 +291,7 @@ export const getConversations = createServerFn({ method: "POST" })
         },
         lastMessage: lastMsg?.content ?? null,
         lastMessageAt: lastMsg?.created_at ?? null,
-        unread: false,
+        unreadCount: unreadCount ?? 0,
       });
     }
 
@@ -308,7 +326,7 @@ export const getMessages = createServerFn({ method: "POST" })
         conversationId: m.conversation_id,
         senderId: m.sender_id,
         content: m.content,
-        createdAt: m.created_at,
+        createdAt: m.created_at ?? new Date().toISOString(),
       })),
     };
   });
@@ -349,7 +367,7 @@ export const sendMessage = createServerFn({ method: "POST" })
         conversationId: msg.conversation_id,
         senderId: msg.sender_id,
         content: msg.content,
-        createdAt: msg.created_at,
+        createdAt: msg.created_at ?? new Date().toISOString(),
       },
     };
   });
