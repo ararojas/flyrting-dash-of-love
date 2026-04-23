@@ -8,6 +8,7 @@ import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { useApp, type ChatPartner } from "@/lib/app-state";
 import { getAICompatibility } from "@/lib/matching.functions";
 import { getAirportMatches, openConversation, type AirportMatch } from "@/lib/social.functions";
+import { getUnreadTotal } from "@/lib/social.functions";
 import { toast } from "sonner";
 import { signOut, useAuth } from "@/lib/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,7 @@ export function MatchesGrid() {
   const [aiScores, setAiScores] = useState<Record<string, { compatibility: number; reason: string }>>({});
   const [aiLoading, setAiLoading] = useState(false);
   const [openingChat, setOpeningChat] = useState<string | null>(null);
+  const [unreadTotal, setUnreadTotal] = useState(0);
 
   const [profile, setProfile] = useState<{
     age: number | null;
@@ -50,6 +52,40 @@ export function MatchesGrid() {
     travel_style: string | null;
     zodiac: string | null;
   } | null>(null);
+
+  // Poll unread total + subscribe to new messages for live badge updates
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const refresh = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const { total } = await getUnreadTotal({ data: { token } });
+      if (!cancelled) setUnreadTotal(total);
+    };
+
+    refresh();
+
+    // Listen to ALL new message inserts; the server function filters by user
+    const channel = supabase
+      .channel(`unread:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const m = payload.new as { sender_id: string };
+          if (m.sender_id !== user.id) refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Load current user's profile
   useEffect(() => {
