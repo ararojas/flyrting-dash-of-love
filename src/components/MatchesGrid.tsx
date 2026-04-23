@@ -8,10 +8,32 @@ import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { useApp, type ChatPartner } from "@/lib/app-state";
 import { getAICompatibility } from "@/lib/matching.functions";
 import { getAirportMatches, openConversation, type AirportMatch } from "@/lib/social.functions";
+import { mockMatches } from "@/lib/mock-data";
 import { getUnreadTotal } from "@/lib/social.functions";
 import { toast } from "sonner";
 import { signOut, useAuth } from "@/lib/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+
+// Convert mock profiles into AirportMatch shape for demo mode
+const DEMO_MATCHES: AirportMatch[] = mockMatches.map((m) => ({
+  userId: `demo-${m.id}`,
+  displayName: m.name,
+  selfieDataUrl: m.photo,
+  avatarUrl: null,
+  age: m.age,
+  gender: m.gender,
+  interestedIn: m.interestedIn,
+  nationality: m.nationality,
+  zodiac: m.zodiac,
+  arrivalHabit: m.arrivalHabit,
+  travelStyle: m.travelStyle,
+  bio: m.bio,
+  hobbies: null,
+  boardingTime: m.boardingTime.toISOString(),
+  destinationAirport: m.destination,
+  gate: m.gate,
+  coincidences: m.coincidences,
+}));
 
 const NATIONALITY_FLAGS: Record<string, string> = {
   French: "🇫🇷", Italian: "🇮🇹", Spanish: "🇪🇸", German: "🇩🇪", British: "🇬🇧",
@@ -222,15 +244,51 @@ export function MatchesGrid() {
 
   const getCompatibility = (match: AirportMatch): number => {
     const aiScore = aiScores[match.displayName ?? ""];
-    return aiScore ? aiScore.compatibility : 75;
+    if (aiScore) return aiScore.compatibility;
+    if (match.userId.startsWith("demo-")) {
+      const mockId = match.userId.replace("demo-", "");
+      return mockMatches.find((m) => m.id === mockId)?.compatibility ?? 75;
+    }
+    return 75;
   };
 
-  const sortedMatches = [...filteredMatches].sort(
+  // Fall back to demo data when the airport is empty
+  const isDemoMode = !loadingMatches && filteredMatches.length === 0;
+  const displayMatches = isDemoMode
+    ? DEMO_MATCHES.filter((m) => {
+        const showPref = preferences.genderPref;
+        if (showPref === "women" && m.gender?.toLowerCase() !== "woman") return false;
+        if (showPref === "men" && m.gender?.toLowerCase() !== "man") return false;
+        return true;
+      })
+    : filteredMatches;
+
+  const sortedMatches = [...displayMatches].sort(
     (a, b) => getCompatibility(b) - getCompatibility(a)
   );
 
   const handleMatchClick = async (match: AirportMatch) => {
     if (openingChat) return;
+
+    const partner: ChatPartner = {
+      userId: match.userId,
+      displayName: match.displayName,
+      selfieDataUrl: match.selfieDataUrl,
+      avatarUrl: match.avatarUrl,
+      nationality: match.nationality,
+      boardingTime: match.boardingTime,
+      destinationAirport: match.destinationAirport,
+      gate: match.gate,
+      coincidences: match.coincidences,
+      bio: match.bio,
+    };
+
+    // Demo match — open chat locally without touching the DB
+    if (match.userId.startsWith("demo-")) {
+      openChat(`demo-${match.userId}`, partner);
+      return;
+    }
+
     setOpeningChat(match.userId);
     try {
       const { data: { session: authSession } } = await supabase.auth.getSession();
@@ -242,19 +300,6 @@ export function MatchesGrid() {
         toast.error(result.error ?? "Could not open conversation");
         return;
       }
-
-      const partner: ChatPartner = {
-        userId: match.userId,
-        displayName: match.displayName,
-        selfieDataUrl: match.selfieDataUrl,
-        avatarUrl: match.avatarUrl,
-        nationality: match.nationality,
-        boardingTime: match.boardingTime,
-        destinationAirport: match.destinationAirport,
-        gate: match.gate,
-        coincidences: match.coincidences,
-        bio: match.bio,
-      };
       openChat(result.conversationId, partner);
     } catch {
       toast.error("Failed to open conversation");
@@ -332,20 +377,6 @@ export function MatchesGrid() {
         )}
       </div>
 
-      {/* Empty state */}
-      {!loadingMatches && sortedMatches.length === 0 && (
-        <div className="flex flex-col items-center text-center mt-20 px-6">
-          <div className="h-16 w-16 rounded-full bg-card border border-border flex items-center justify-center mb-4">
-            <Plane className="h-7 w-7 text-coral/60" />
-          </div>
-          <p className="font-display text-lg font-semibold">No one here yet</p>
-          <p className="text-xs text-muted-foreground mt-2 max-w-[260px]">
-            {activeSession
-              ? "No other Flyrters at your airport right now. Check back in a few minutes!"
-              : "Upload your boarding pass to discover people at your airport."}
-          </p>
-        </div>
-      )}
 
       {/* Grid */}
       <div className="grid grid-cols-2 gap-3 mt-2">

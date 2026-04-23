@@ -3,17 +3,30 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Send, Clock, Plane, Sparkles, Loader2, User as UserIcon } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useApp } from "@/lib/app-state";
+import { mockChat } from "@/lib/mock-data";
 import { getMessages, sendMessage as sendMessageFn, markConversationRead, type Message } from "@/lib/social.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
 
+type DisplayMessage = { id: string; senderId: string; content: string };
+
+function fromMock(): DisplayMessage[] {
+  return mockChat.map((m) => ({ id: m.id, senderId: m.senderId, content: m.text }));
+}
+
+function fromDb(m: Message): DisplayMessage {
+  return { id: m.id, senderId: m.senderId, content: m.content };
+}
+
 export function ChatScreen() {
-  const { setScreen, activeChatId, activeChatPartner, activeSession } = useApp();
+  const { setScreen, activeChatId, activeChatPartner } = useApp();
   const { user } = useAuth();
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingMessages, setLoadingMessages] = useState(true);
+  const isDemo = activeChatId?.startsWith("demo-") ?? false;
+
+  const [messages, setMessages] = useState<DisplayMessage[]>(isDemo ? fromMock() : []);
+  const [loadingMessages, setLoadingMessages] = useState(!isDemo);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [showExtendPopup, setShowExtendPopup] = useState(false);
@@ -26,9 +39,9 @@ export function ChatScreen() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Load initial messages
+  // Load messages from DB (real conversations only)
   useEffect(() => {
-    if (!conversationId) return;
+    if (isDemo || !conversationId) return;
     let cancelled = false;
     (async () => {
       setLoadingMessages(true);
@@ -39,7 +52,7 @@ export function ChatScreen() {
         const result = await getMessages({ data: { token, conversationId } });
         if (!cancelled) {
           if (result.error) toast.error(result.error);
-          else setMessages(result.messages);
+          else setMessages(result.messages.map(fromDb));
         }
         // Mark as read on open
         await markConversationRead({ data: { token, conversationId } });
@@ -48,11 +61,11 @@ export function ChatScreen() {
       }
     })();
     return () => { cancelled = true; };
-  }, [conversationId]);
+  }, [conversationId, isDemo]);
 
-  // Supabase Realtime subscription for live messages
+  // Realtime subscription (real conversations only)
   useEffect(() => {
-    if (!conversationId) return;
+    if (isDemo || !conversationId) return;
 
     const channel = supabase
       .channel(`conversation:${conversationId}`)
@@ -73,18 +86,8 @@ export function ChatScreen() {
             created_at: string;
           };
           setMessages((prev) => {
-            // Avoid duplicates (optimistic update already added it)
             if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [
-              ...prev,
-              {
-                id: newMsg.id,
-                conversationId: newMsg.conversation_id,
-                senderId: newMsg.sender_id,
-                content: newMsg.content,
-                createdAt: newMsg.created_at,
-              },
-            ];
+            return [...prev, { id: newMsg.id, senderId: newMsg.sender_id, content: newMsg.content }];
           });
           // Mark as read whenever a partner message arrives while we're in the chat
           if (newMsg.sender_id !== user?.id) {
@@ -97,16 +100,13 @@ export function ChatScreen() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId, user?.id]);
+    return () => { supabase.removeChannel(channel); };
+  }, [conversationId, isDemo]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Show "extend date" popup when partner boards in < 30 minutes
   useEffect(() => {
     if (!partner?.boardingTime) return;
     const boardingMs = new Date(partner.boardingTime).getTime();
@@ -121,20 +121,22 @@ export function ChatScreen() {
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || !conversationId || sending) return;
+    if (!text || sending) return;
     setInput("");
+
+    if (isDemo) {
+      setMessages((prev) => [
+        ...prev,
+        { id: `msg-${Date.now()}`, senderId: "me", content: text },
+      ]);
+      return;
+    }
+
+    if (!conversationId) return;
     setSending(true);
 
-    // Optimistic update
     const tempId = `temp-${Date.now()}`;
-    const optimistic: Message = {
-      id: tempId,
-      conversationId,
-      senderId: user?.id ?? "me",
-      content: text,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimistic]);
+    setMessages((prev) => [...prev, { id: tempId, senderId: user?.id ?? "me", content: text }]);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -146,9 +148,8 @@ export function ChatScreen() {
         toast.error(result.error);
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
       } else if (result.message) {
-        // Replace the optimistic message with the real one
         setMessages((prev) =>
-          prev.map((m) => (m.id === tempId ? result.message! : m))
+          prev.map((m) => (m.id === tempId ? fromDb(result.message!) : m))
         );
       }
     } catch {
@@ -233,7 +234,7 @@ export function ChatScreen() {
         )}
 
         {messages.map((msg) => {
-          const isMe = msg.senderId === user?.id || msg.senderId === "me";
+          const isMe = msg.senderId === "me" || msg.senderId === user?.id;
           const isTemp = msg.id.startsWith("temp-");
           return (
             <motion.div
@@ -307,7 +308,6 @@ export function ChatScreen() {
           </button>
         </div>
 
-        {/* Rate the date button */}
         <button
           onClick={() => setScreen("post-date")}
           className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
