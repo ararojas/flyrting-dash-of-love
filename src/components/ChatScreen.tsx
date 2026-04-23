@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Send, Clock, Plane, Sparkles, Loader2, User as UserIcon } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useApp } from "@/lib/app-state";
-import { getMessages, sendMessage as sendMessageFn, type Message } from "@/lib/social.functions";
 import { mockChat } from "@/lib/mock-data";
+import { getMessages, sendMessage as sendMessageFn, markConversationRead, type Message } from "@/lib/social.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
@@ -54,6 +54,8 @@ export function ChatScreen() {
           if (result.error) toast.error(result.error);
           else setMessages(result.messages.map(fromDb));
         }
+        // Mark as read on open
+        await markConversationRead({ data: { token, conversationId } });
       } finally {
         if (!cancelled) setLoadingMessages(false);
       }
@@ -87,6 +89,13 @@ export function ChatScreen() {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, { id: newMsg.id, senderId: newMsg.sender_id, content: newMsg.content }];
           });
+          // Mark as read whenever a partner message arrives while we're in the chat
+          if (newMsg.sender_id !== user?.id) {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+              const token = session?.access_token;
+              if (token) markConversationRead({ data: { token, conversationId } });
+            });
+          }
         }
       )
       .subscribe();

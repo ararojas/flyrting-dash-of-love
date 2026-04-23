@@ -212,3 +212,24 @@ export const getActiveSession = createServerFn({ method: "POST" })
 
     return { session };
   });
+
+// ─── Deactivate all active sessions for the current user ───────────────────
+// Called on every fresh sign-in so the user must scan a new boarding pass.
+
+export const deactivateSessions = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ token: z.string().min(1) }).parse(input)
+  )
+  .handler(async ({ data }) => {
+    const client = userClient(data.token);
+    const { data: { user }, error: authErr } = await client.auth.getUser();
+    if (authErr || !user) return { error: "Unauthorized" };
+
+    const { error } = await client
+      .from("sessions")
+      .update({ is_active: false } as never)
+      .eq("user_id", user.id)
+      .eq("is_active", true as never);
+
+    return { error: error?.message ?? null };
+  });

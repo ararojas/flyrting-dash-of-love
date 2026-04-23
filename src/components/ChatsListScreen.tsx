@@ -100,19 +100,33 @@ export function ChatsListScreen() {
               className="w-full flex items-center gap-3 rounded-2xl bg-card border border-border p-3 text-left hover:border-coral/40 transition-colors"
             >
               {photo ? (
+                <div className="relative shrink-0">
                 <img
                   src={photo}
                   alt={p.displayName ?? ""}
-                  className="h-14 w-14 rounded-full object-cover border-2 border-coral/40 shrink-0"
+                  className="h-14 w-14 rounded-full object-cover border-2 border-coral/40"
                 />
+                  {convo.unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-coral text-coral-foreground text-[10px] font-bold flex items-center justify-center glow-coral">
+                      {convo.unreadCount > 9 ? "9+" : convo.unreadCount}
+                    </span>
+                  )}
+                </div>
               ) : (
-                <div className="h-14 w-14 rounded-full bg-muted border-2 border-coral/40 flex items-center justify-center shrink-0">
+                <div className="relative shrink-0">
+                  <div className="h-14 w-14 rounded-full bg-muted border-2 border-coral/40 flex items-center justify-center">
                   <UserIcon className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+                  {convo.unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-coral text-coral-foreground text-[10px] font-bold flex items-center justify-center glow-coral">
+                      {convo.unreadCount > 9 ? "9+" : convo.unreadCount}
+                    </span>
+                  )}
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-display font-bold text-foreground truncate">
+                  <span className={`font-display truncate ${convo.unreadCount > 0 ? "font-extrabold text-coral" : "font-bold text-foreground"}`}>
                     {p.displayName ?? "Traveller"}
                   </span>
                 </div>
@@ -124,7 +138,7 @@ export function ChatsListScreen() {
                   </span>
                 </div>
                 {convo.lastMessage ? (
-                  <p className="text-xs text-muted-foreground/80 truncate mt-1 italic">
+                  <p className={`text-xs truncate mt-1 ${convo.unreadCount > 0 ? "text-foreground font-semibold" : "text-muted-foreground/80 italic"}`}>
                     {convo.lastMessage}
                   </p>
                 ) : (

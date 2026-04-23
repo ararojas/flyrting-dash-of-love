@@ -51,7 +51,7 @@ export interface ConversationSummary {
   };
   lastMessage: string | null;
   lastMessageAt: string | null;
-  unread: boolean;
+  unreadCount: number;
 }
 
 export interface Message {
@@ -258,6 +258,24 @@ export const getConversations = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
 
+      // Compute unread count: messages from partner after my last_read_at
+      const { data: readRow } = await client
+        .from("conversation_reads")
+        .select("last_read_at")
+        .eq("user_id", user.id)
+        .eq("conversation_id", convo.id)
+        .maybeSingle();
+
+      const lastReadAt = (readRow as { last_read_at?: string } | null)?.last_read_at
+        ?? "1970-01-01T00:00:00Z";
+
+      const { count: unreadCount } = await client
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", convo.id)
+        .eq("sender_id", partnerId)
+        .gt("created_at", lastReadAt);
+
       result.push({
         conversationId: convo.id,
         partner: {
@@ -273,7 +291,7 @@ export const getConversations = createServerFn({ method: "POST" })
         },
         lastMessage: lastMsg?.content ?? null,
         lastMessageAt: lastMsg?.created_at ?? null,
-        unread: false,
+        unreadCount: unreadCount ?? 0,
       });
     }
 
@@ -308,7 +326,7 @@ export const getMessages = createServerFn({ method: "POST" })
         conversationId: m.conversation_id,
         senderId: m.sender_id,
         content: m.content,
-        createdAt: m.created_at,
+        createdAt: m.created_at ?? new Date().toISOString(),
       })),
     };
   });
@@ -349,12 +367,90 @@ export const sendMessage = createServerFn({ method: "POST" })
         conversationId: msg.conversation_id,
         senderId: msg.sender_id,
         content: msg.content,
-        createdAt: msg.created_at,
+        createdAt: msg.created_at ?? new Date().toISOString(),
       },
     };
   });
 
 // ─── Submit post-date rating ─────────────────────────────────────────────────
+
+// ─── Mark a conversation as read for the current user ───────────────────────
+
+export const markConversationRead = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({ token: z.string().min(1), conversationId: z.string().uuid() })
+      .parse(input)
+  )
+  .handler(async ({ data }): Promise<{ error: string | null }> => {
+    const client = userClient(data.token);
+    const { data: { user }, error: authErr } = await client.auth.getUser();
+    if (authErr || !user) return { error: "Unauthorized" };
+
+    const { error } = await client
+      .from("conversation_reads")
+      .upsert(
+        {
+          user_id: user.id,
+          conversation_id: data.conversationId,
+          last_read_at: new Date().toISOString(),
+        } as never,
+        { onConflict: "user_id,conversation_id" }
+      );
+
+    return { error: error?.message ?? null };
+  });
+
+// ─── Total unread messages across all conversations for current user ───────
+
+export const getUnreadTotal = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ token: z.string().min(1) }).parse(input)
+  )
+  .handler(async ({ data }): Promise<{ total: number }> => {
+    const client = userClient(data.token);
+    const { data: { user }, error: authErr } = await client.auth.getUser();
+    if (authErr || !user) return { total: 0 };
+
+    // Fetch conversations user belongs to
+    const { data: convos } = await client
+      .from("conversations")
+      .select("id, user1_id, user2_id")
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+    if (!convos?.length) return { total: 0 };
+
+    // Fetch all read records at once
+    const convoIds = convos.map((c) => c.id);
+    const { data: reads } = await client
+      .from("conversation_reads")
+      .select("conversation_id, last_read_at")
+      .eq("user_id", user.id)
+      .in("conversation_id", convoIds);
+
+    const readMap = new Map<string, string>();
+    (reads ?? []).forEach((r) => {
+      readMap.set(
+        (r as { conversation_id: string }).conversation_id,
+        (r as { last_read_at: string }).last_read_at
+      );
+    });
+
+    let total = 0;
+    for (const convo of convos) {
+      const partnerId = convo.user1_id === user.id ? convo.user2_id : convo.user1_id;
+      const lastReadAt = readMap.get(convo.id) ?? "1970-01-01T00:00:00Z";
+      const { count } = await client
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", convo.id)
+        .eq("sender_id", partnerId)
+        .gt("created_at", lastReadAt);
+      total += count ?? 0;
+    }
+
+    return { total };
+  });
 
 export const submitRating = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
