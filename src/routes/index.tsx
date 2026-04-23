@@ -20,7 +20,7 @@ import { ProfileScreen } from "@/components/ProfileScreen";
 import { ChatsListScreen } from "@/components/ChatsListScreen";
 import { useAuth } from "@/lib/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { getActiveSession } from "@/lib/session.functions";
+import { deactivateSessions } from "@/lib/session.functions";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -69,38 +69,17 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, onProfileScreen]);
 
-  // Restore active session from DB when a returning user logs in
+  // On every fresh sign-in, deactivate any leftover sessions so the user
+  // is required to scan their boarding pass again.
   useEffect(() => {
-    if (!user || activeSession) return;
-    (async () => {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      const token = authSession?.access_token;
-      if (!token) return;
-      const result = await getActiveSession({ data: { token } });
-      if (result.session) {
-        const s = result.session as {
-          id: string;
-          flight_number: string;
-          departure_airport: string;
-          destination_airport: string;
-          boarding_time: string;
-          gate: string | null;
-          passenger_name: string | null;
-          location_verified: boolean;
-        };
-        setActiveSession({
-          id: s.id,
-          flightNumber: s.flight_number,
-          departureAirport: s.departure_airport,
-          destinationAirport: s.destination_airport,
-          boardingTime: s.boarding_time,
-          gate: s.gate,
-          passengerName: s.passenger_name,
-          locationVerified: s.location_verified,
-        });
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.access_token) {
+        await deactivateSessions({ data: { token: session.access_token } });
+        setActiveSession(null);
       }
-    })();
-  }, [user, activeSession]);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   // Route based on auth + profile state
   useEffect(() => {
