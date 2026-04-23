@@ -1,34 +1,157 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Send, Clock, Plane, Sparkles } from "lucide-react";
-import { mockMatches, mockChat, type ChatMessage } from "@/lib/mock-data";
+import { ArrowLeft, Send, Clock, Plane, Sparkles, Loader2, User as UserIcon } from "lucide-react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useApp } from "@/lib/app-state";
+import { getMessages, sendMessage as sendMessageFn, type Message } from "@/lib/social.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/use-auth";
+import { toast } from "sonner";
 
 export function ChatScreen() {
-  const { setScreen, activeChatId } = useApp();
-  const match = mockMatches.find(m => m.id === activeChatId) || mockMatches[0];
-  const [messages, setMessages] = useState<ChatMessage[]>(mockChat);
+  const { setScreen, activeChatId, activeChatPartner, activeSession } = useApp();
+  const { user } = useAuth();
+
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
   const [showExtendPopup, setShowExtendPopup] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const partner = activeChatPartner;
+  const conversationId = activeChatId;
 
-  // Show extend popup after 3 seconds for demo
-  useEffect(() => {
-    const timer = setTimeout(() => setShowExtendPopup(true), 5000);
-    return () => clearTimeout(timer);
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    const msg: ChatMessage = { id: `m${Date.now()}`, senderId: "me", text: input, timestamp: new Date() };
-    setMessages(prev => [...prev, msg]);
+  // Load initial messages
+  useEffect(() => {
+    if (!conversationId) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingMessages(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+        const result = await getMessages({ data: { token, conversationId } });
+        if (!cancelled) {
+          if (result.error) toast.error(result.error);
+          else setMessages(result.messages);
+        }
+      } finally {
+        if (!cancelled) setLoadingMessages(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [conversationId]);
+
+  // Supabase Realtime subscription for live messages
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase
+      .channel(`conversation:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as {
+            id: string;
+            conversation_id: string;
+            sender_id: string;
+            content: string;
+            created_at: string;
+          };
+          setMessages((prev) => {
+            // Avoid duplicates (optimistic update already added it)
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [
+              ...prev,
+              {
+                id: newMsg.id,
+                conversationId: newMsg.conversation_id,
+                senderId: newMsg.sender_id,
+                content: newMsg.content,
+                createdAt: newMsg.created_at,
+              },
+            ];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // Show "extend date" popup when partner boards in < 30 minutes
+  useEffect(() => {
+    if (!partner?.boardingTime) return;
+    const boardingMs = new Date(partner.boardingTime).getTime();
+    const msUntilWarning = boardingMs - Date.now() - 30 * 60 * 1000;
+    if (msUntilWarning <= 0) {
+      setShowExtendPopup(true);
+      return;
+    }
+    const timer = setTimeout(() => setShowExtendPopup(true), msUntilWarning);
+    return () => clearTimeout(timer);
+  }, [partner?.boardingTime]);
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || !conversationId || sending) return;
     setInput("");
+    setSending(true);
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Message = {
+      id: tempId,
+      conversationId,
+      senderId: user?.id ?? "me",
+      content: text,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) { toast.error("Not signed in"); return; }
+
+      const result = await sendMessageFn({ data: { token, conversationId, content: text } });
+      if (result.error) {
+        toast.error(result.error);
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      } else if (result.message) {
+        // Replace the optimistic message with the real one
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? result.message! : m))
+        );
+      }
+    } catch {
+      toast.error("Failed to send message");
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } finally {
+      setSending(false);
+    }
   };
+
+  const partnerPhoto = partner?.selfieDataUrl ?? partner?.avatarUrl;
+  const partnerBoardingDate = partner?.boardingTime ? new Date(partner.boardingTime) : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-midnight">
@@ -38,42 +161,86 @@ export function ChatScreen() {
           <button onClick={() => setScreen("matches")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <img src={match.photo} alt={match.name} className="h-10 w-10 rounded-full object-cover border-2 border-coral" />
-          <div className="flex-1">
+
+          {partnerPhoto ? (
+            <img
+              src={partnerPhoto}
+              alt={partner?.displayName ?? ""}
+              className="h-10 w-10 rounded-full object-cover border-2 border-coral"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-card border-2 border-coral flex items-center justify-center">
+              <UserIcon className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-display font-bold">{match.name}</span>
-              <span className="text-sm">{match.nationalityFlag}</span>
-              {match.coincidences > 0 && (
-                <span className="flex items-center gap-0.5 text-[10px] bg-fate/20 text-fate rounded-full px-1.5 py-0.5">
-                  <Sparkles className="h-2.5 w-2.5" /> {match.coincidences}× crossed paths
+              <span className="font-display font-bold truncate">
+                {partner?.displayName ?? "Traveller"}
+              </span>
+              {partner?.nationality && (
+                <span className="text-sm shrink-0">
+                  {partner.nationality.slice(0, 2)}
+                </span>
+              )}
+              {(partner?.coincidences ?? 0) > 0 && (
+                <span className="flex items-center gap-0.5 text-[10px] bg-fate/20 text-fate rounded-full px-1.5 py-0.5 shrink-0">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  {partner!.coincidences}× fate
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Plane className="h-3 w-3" /> {match.destination} • {match.gate}
+              <Plane className="h-3 w-3" />
+              <span className="truncate">
+                {partner?.destinationAirport ?? "—"}
+                {partner?.gate ? ` · Gate ${partner.gate}` : ""}
+              </span>
             </div>
           </div>
-          <CountdownTimer targetTime={match.boardingTime} variant="clock" size="sm" />
+
+          {partnerBoardingDate && (
+            <CountdownTimer targetTime={partnerBoardingDate} variant="clock" size="sm" />
+          )}
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.map(msg => {
-          const isMe = msg.senderId === "me";
+        {loadingMessages && (
+          <div className="flex justify-center pt-8">
+            <Loader2 className="h-6 w-6 text-coral animate-spin" />
+          </div>
+        )}
+
+        {!loadingMessages && messages.length === 0 && (
+          <div className="flex flex-col items-center text-center pt-12 px-6">
+            <p className="text-sm text-muted-foreground">
+              Say hello — you only have{" "}
+              {partnerBoardingDate ? "until they board" : "limited time"}!
+            </p>
+          </div>
+        )}
+
+        {messages.map((msg) => {
+          const isMe = msg.senderId === user?.id || msg.senderId === "me";
+          const isTemp = msg.id.startsWith("temp-");
           return (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: isTemp ? 0.6 : 1, y: 0 }}
               className={`flex ${isMe ? "justify-end" : "justify-start"}`}
             >
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                isMe
-                  ? "bg-coral text-coral-foreground rounded-br-md"
-                  : "bg-card text-foreground rounded-bl-md border border-border"
-              }`}>
-                {msg.text}
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                  isMe
+                    ? "bg-coral text-coral-foreground rounded-br-md"
+                    : "bg-card text-foreground rounded-bl-md border border-border"
+                }`}
+              >
+                {msg.content}
               </div>
             </motion.div>
           );
@@ -93,7 +260,7 @@ export function ChatScreen() {
             <span className="font-display font-bold text-gold">Time is running out!</span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            {match.name} boards in less than an hour. Want to extend your date?
+            {partner?.displayName ?? "They"} boards in less than 30 minutes. Want to extend your date?
           </p>
           <div className="flex gap-2">
             <button
@@ -117,18 +284,27 @@ export function ChatScreen() {
         <div className="flex items-center gap-2">
           <input
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendMessage()}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             placeholder="Say something spontaneous…"
             className="flex-1 rounded-xl bg-input px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-coral"
           />
           <button
-            onClick={sendMessage}
-            className="h-11 w-11 rounded-xl bg-coral flex items-center justify-center text-coral-foreground hover:opacity-90 transition-opacity"
+            onClick={handleSend}
+            disabled={!input.trim() || sending}
+            className="h-11 w-11 rounded-xl bg-coral flex items-center justify-center text-coral-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            <Send className="h-4 w-4" />
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
+
+        {/* Rate the date button */}
+        <button
+          onClick={() => setScreen("post-date")}
+          className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Rate this date →
+        </button>
       </div>
     </div>
   );

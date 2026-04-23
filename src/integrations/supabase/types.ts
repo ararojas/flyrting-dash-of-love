@@ -29,6 +29,7 @@ export type Database = {
           id: string
           interested_in: string | null
           nationality: string | null
+          phone_number: string | null
           profile_completed: boolean
           selfie_data_url: string | null
           travel_style: string | null
@@ -49,6 +50,7 @@ export type Database = {
           id: string
           interested_in?: string | null
           nationality?: string | null
+          phone_number?: string | null
           profile_completed?: boolean
           selfie_data_url?: string | null
           travel_style?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           id?: string
           interested_in?: string | null
           nationality?: string | null
+          phone_number?: string | null
           profile_completed?: boolean
           selfie_data_url?: string | null
           travel_style?: string | null
@@ -76,6 +79,201 @@ export type Database = {
           zodiac?: string | null
         }
         Relationships: []
+      }
+      sessions: {
+        Row: {
+          id: string
+          user_id: string
+          flight_number: string
+          departure_airport: string
+          destination_airport: string
+          boarding_time: string
+          departure_time: string | null
+          passenger_name: string | null
+          gate: string | null
+          is_active: boolean
+          location_verified: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          flight_number: string
+          departure_airport: string
+          destination_airport: string
+          boarding_time: string
+          departure_time?: string | null
+          passenger_name?: string | null
+          gate?: string | null
+          is_active?: boolean
+          location_verified?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          flight_number?: string
+          departure_airport?: string
+          destination_airport?: string
+          boarding_time?: string
+          departure_time?: string | null
+          passenger_name?: string | null
+          gate?: string | null
+          is_active?: boolean
+          location_verified?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      airport_visits: {
+        Row: {
+          id: string
+          user_id: string
+          airport_code: string
+          session_id: string | null
+          visited_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          airport_code: string
+          session_id?: string | null
+          visited_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          airport_code?: string
+          session_id?: string | null
+          visited_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "airport_visits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      conversations: {
+        Row: {
+          id: string
+          user1_id: string
+          user2_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user1_id: string
+          user2_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user1_id?: string
+          user2_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user1_id_fkey"
+            columns: ["user1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user2_id_fkey"
+            columns: ["user2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          sender_id?: string
+          content?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      ratings: {
+        Row: {
+          id: string
+          conversation_id: string
+          rater_id: string
+          ratee_id: string
+          stars: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          rater_id: string
+          ratee_id: string
+          stars: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          rater_id?: string
+          ratee_id?: string
+          stars?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

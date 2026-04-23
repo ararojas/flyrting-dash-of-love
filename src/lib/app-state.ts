@@ -19,16 +19,44 @@ export interface UserPreferences {
   genderPref: string;
 }
 
+export interface SessionData {
+  id: string;
+  flightNumber: string;
+  departureAirport: string;
+  destinationAirport: string;
+  boardingTime: string; // ISO string
+  gate: string | null;
+  passengerName: string | null;
+  locationVerified: boolean;
+}
+
+export interface ChatPartner {
+  userId: string;
+  displayName: string | null;
+  selfieDataUrl: string | null;
+  avatarUrl: string | null;
+  nationality: string | null;
+  boardingTime: string | null;   // ISO string
+  destinationAirport: string | null;
+  gate: string | null;
+  coincidences: number;
+  bio: string | null;
+}
+
 export interface AppState {
   screen: AppScreen;
   setScreen: (screen: AppScreen) => void;
-  activeChatId: string | null;
+  activeChatId: string | null;   // conversationId (UUID)
   setActiveChatId: (id: string | null) => void;
+  activeChatPartner: ChatPartner | null;
+  setActiveChatPartner: (partner: ChatPartner | null) => void;
   preferences: UserPreferences;
   setPreferences: (prefs: UserPreferences) => void;
-  /** IDs of matches the user has opened a chat with. */
+  /** conversationIds the user has opened */
   openedChats: string[];
-  openChat: (id: string) => void;
+  openChat: (conversationId: string, partner: ChatPartner) => void;
+  activeSession: SessionData | null;
+  setActiveSession: (session: SessionData | null) => void;
 }
 
 export const defaultPreferences: UserPreferences = {
@@ -43,10 +71,14 @@ export const AppContext = createContext<AppState>({
   setScreen: () => {},
   activeChatId: null,
   setActiveChatId: () => {},
+  activeChatPartner: null,
+  setActiveChatPartner: () => {},
   preferences: defaultPreferences,
   setPreferences: () => {},
   openedChats: [],
   openChat: () => {},
+  activeSession: null,
+  setActiveSession: () => {},
 });
 
 export const useApp = () => useContext(AppContext);
