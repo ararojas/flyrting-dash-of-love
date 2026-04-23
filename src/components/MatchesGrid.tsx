@@ -252,16 +252,14 @@ export function MatchesGrid() {
     return 75;
   };
 
-  // Fall back to demo data when the airport is empty
-  const isDemoMode = !loadingMatches && filteredMatches.length === 0;
-  const displayMatches = isDemoMode
-    ? DEMO_MATCHES.filter((m) => {
-        const showPref = preferences.genderPref;
-        if (showPref === "women" && m.gender?.toLowerCase() !== "woman") return false;
-        if (showPref === "men" && m.gender?.toLowerCase() !== "man") return false;
-        return true;
-      })
-    : filteredMatches;
+  // Show real matches when available, otherwise always show demo profiles
+  const demoFiltered = DEMO_MATCHES.filter((m) => {
+    const showPref = preferences.genderPref;
+    if (showPref === "women" && m.gender?.toLowerCase() !== "woman") return false;
+    if (showPref === "men" && m.gender?.toLowerCase() !== "man") return false;
+    return true;
+  });
+  const displayMatches = filteredMatches.length > 0 ? filteredMatches : demoFiltered;
 
   const sortedMatches = [...displayMatches].sort(
     (a, b) => getCompatibility(b) - getCompatibility(a)
@@ -285,7 +283,7 @@ export function MatchesGrid() {
 
     // Demo match — open chat locally without touching the DB
     if (match.userId.startsWith("demo-")) {
-      openChat(`demo-${match.userId}`, partner);
+      openChat(match.userId, partner);
       return;
     }
 
