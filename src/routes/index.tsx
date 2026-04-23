@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AppContext, type AppScreen, type UserPreferences, defaultPreferences } from "@/lib/app-state";
+import {
+  AppContext,
+  type AppScreen,
+  type UserPreferences,
+  type SessionData,
+  type ChatPartner,
+  defaultPreferences,
+} from "@/lib/app-state";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { SignupScreen } from "@/components/SignupScreen";
 import { BoardingPassScreen } from "@/components/BoardingPassScreen";
@@ -13,6 +20,7 @@ import { ProfileScreen } from "@/components/ProfileScreen";
 import { ChatsListScreen } from "@/components/ChatsListScreen";
 import { useAuth } from "@/lib/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { deactivateSessions } from "@/lib/session.functions";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -30,14 +38,17 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [screen, setScreen] = useState<AppScreen>("welcome");
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [activeChatPartner, setActiveChatPartner] = useState<ChatPartner | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
   const [openedChats, setOpenedChats] = useState<string[]>([]);
+  const [activeSession, setActiveSession] = useState<SessionData | null>(null);
+
   const { user, loading } = useAuth();
   const [profileChecked, setProfileChecked] = useState(false);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null);
   const onProfileScreen = screen === "profile";
 
-  // Check profile completion whenever the user changes OR returns from the profile screen
+  // Check profile completion whenever the user changes or returns from the profile screen
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -55,9 +66,20 @@ function Index() {
       setProfileCompleted(!!data?.profile_completed);
       setProfileChecked(true);
     })();
-    // Re-check when user navigates away from the profile screen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, onProfileScreen]);
+
+  // On every fresh sign-in, deactivate any leftover sessions so the user
+  // is required to scan their boarding pass again.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.access_token) {
+        await deactivateSessions({ data: { token: session.access_token } });
+        setActiveSession(null);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   // Route based on auth + profile state
   useEffect(() => {
@@ -66,16 +88,14 @@ function Index() {
       setScreen("welcome");
       return;
     }
-    // First-time user → must create profile
     if (profileCompleted === false && screen !== "profile") {
       setScreen("profile");
       return;
     }
-    // Returning user landing on auth screens → forward into the app
     if (profileCompleted && (screen === "welcome" || screen === "signup")) {
-      setScreen("boarding-pass");
+      setScreen(activeSession ? "matches" : "boarding-pass");
     }
-  }, [user, loading, profileChecked, profileCompleted, screen]);
+  }, [user, loading, profileChecked, profileCompleted, screen, activeSession]);
 
   if (loading || (user && !profileChecked)) {
     return (
@@ -85,14 +105,30 @@ function Index() {
     );
   }
 
-  const openChat = (id: string) => {
-    setActiveChatId(id);
-    setOpenedChats((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  const openChat = (conversationId: string, partner: ChatPartner) => {
+    setActiveChatId(conversationId);
+    setActiveChatPartner(partner);
+    setOpenedChats((prev) => (prev.includes(conversationId) ? prev : [...prev, conversationId]));
     setScreen("chat");
   };
 
   return (
-    <AppContext.Provider value={{ screen, setScreen, activeChatId, setActiveChatId, preferences, setPreferences, openedChats, openChat }}>
+    <AppContext.Provider
+      value={{
+        screen,
+        setScreen,
+        activeChatId,
+        setActiveChatId,
+        activeChatPartner,
+        setActiveChatPartner,
+        preferences,
+        setPreferences,
+        openedChats,
+        openChat,
+        activeSession,
+        setActiveSession,
+      }}
+    >
       <div className="mx-auto max-w-md min-h-screen">
         {screen === "welcome" && <WelcomeScreen />}
         {screen === "signup" && <SignupScreen />}

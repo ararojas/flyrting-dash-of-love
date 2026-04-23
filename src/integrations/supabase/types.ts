@@ -14,6 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
+      airport_visits: {
+        Row: {
+          airport_code: string
+          id: string
+          session_id: string | null
+          user_id: string
+          visited_at: string | null
+        }
+        Insert: {
+          airport_code: string
+          id?: string
+          session_id?: string | null
+          user_id: string
+          visited_at?: string | null
+        }
+        Update: {
+          airport_code?: string
+          id?: string
+          session_id?: string | null
+          user_id?: string
+          visited_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "airport_visits_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "airport_visits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_reads: {
+        Row: {
+          conversation_id: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user1_id_fkey"
+            columns: ["user1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user2_id_fkey"
+            columns: ["user2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           age: number | null
@@ -29,6 +161,7 @@ export type Database = {
           id: string
           interested_in: string | null
           nationality: string | null
+          phone_number: string | null
           profile_completed: boolean
           selfie_data_url: string | null
           travel_style: string | null
@@ -49,6 +182,7 @@ export type Database = {
           id: string
           interested_in?: string | null
           nationality?: string | null
+          phone_number?: string | null
           profile_completed?: boolean
           selfie_data_url?: string | null
           travel_style?: string | null
@@ -69,6 +203,7 @@ export type Database = {
           id?: string
           interested_in?: string | null
           nationality?: string | null
+          phone_number?: string | null
           profile_completed?: boolean
           selfie_data_url?: string | null
           travel_style?: string | null
@@ -76,6 +211,108 @@ export type Database = {
           zodiac?: string | null
         }
         Relationships: []
+      }
+      ratings: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          id: string
+          ratee_id: string
+          rater_id: string
+          stars: number
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          ratee_id: string
+          rater_id: string
+          stars: number
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          ratee_id?: string
+          rater_id?: string
+          stars?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_ratee_id_fkey"
+            columns: ["ratee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_rater_id_fkey"
+            columns: ["rater_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          boarding_time: string
+          created_at: string | null
+          departure_airport: string
+          departure_time: string | null
+          destination_airport: string
+          flight_number: string
+          gate: string | null
+          id: string
+          is_active: boolean | null
+          location_verified: boolean | null
+          passenger_name: string | null
+          user_id: string
+        }
+        Insert: {
+          boarding_time: string
+          created_at?: string | null
+          departure_airport: string
+          departure_time?: string | null
+          destination_airport: string
+          flight_number: string
+          gate?: string | null
+          id?: string
+          is_active?: boolean | null
+          location_verified?: boolean | null
+          passenger_name?: string | null
+          user_id: string
+        }
+        Update: {
+          boarding_time?: string
+          created_at?: string | null
+          departure_airport?: string
+          departure_time?: string | null
+          destination_airport?: string
+          flight_number?: string
+          gate?: string | null
+          id?: string
+          is_active?: boolean | null
+          location_verified?: boolean | null
+          passenger_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -20,6 +20,10 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Local environment — secrets must go in Lovable project settings instead
+.env
+.env.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
