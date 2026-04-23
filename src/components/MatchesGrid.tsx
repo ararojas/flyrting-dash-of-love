@@ -293,9 +293,14 @@ export function MatchesGrid() {
             <button
               onClick={() => setScreen("chats-list")}
               title="Your chats"
-              className="h-10 w-10 rounded-xl bg-card flex items-center justify-center border border-border hover:bg-accent transition-colors"
+              className="relative h-10 w-10 rounded-xl bg-card flex items-center justify-center border border-border hover:bg-accent transition-colors"
             >
               <MessageCircle className="h-4 w-4 text-muted-foreground" />
+              {unreadTotal > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-coral text-coral-foreground text-[10px] font-bold flex items-center justify-center glow-coral">
+                  {unreadTotal > 9 ? "9+" : unreadTotal}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setScreen("profile")}
